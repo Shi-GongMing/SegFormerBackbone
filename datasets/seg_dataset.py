@@ -136,13 +136,29 @@ class CustomSegDataset(Dataset):
             image = self.color_jitter(image)
         return image
 
-    def _to_tensor(self, image: Image.Image, mask: Image.Image):
+    def _to_tensor(self, image: Image.Image, mask: Image.Image):#loveda dataset setting
         image = TF.to_tensor(image)
         if self.normalize:
             image = TF.normalize(image, mean=self.mean, std=self.std)
 
         mask = np.array(mask, dtype=np.int64)
-        mask = torch.from_numpy(mask).long()
+
+        new_mask = np.full_like(mask, 255)  # 默认都忽略
+
+        mapping = {
+            1: 0,  # background
+            2: 1,  # building
+            3: 2,  # road
+            4: 3,  # water
+            5: 4,  # barren
+            6: 5,  # forest
+            7: 6,  # agricultural
+        }
+
+        for old_v, new_v in mapping.items():
+            new_mask[mask == old_v] = new_v
+
+        mask = torch.from_numpy(new_mask).long()
         return image, mask
 
     def __getitem__(self, index: int):
