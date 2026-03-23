@@ -38,16 +38,26 @@ def save_visual_triplet(
     save_path.parent.mkdir(parents=True, exist_ok=True)
 
     image = denormalize_image(image_tensor)
-    pred = pred_mask.detach().cpu().numpy().astype(np.int64)
-    palette = get_default_palette(int(pred.max()) + 1 if pred.max() >= 0 else 1)
-    pred_color = mask_to_color(pred, palette)
 
-    panels = [Image.fromarray(image), Image.fromarray(pred_color)]
+    pred = pred_mask.detach().cpu().numpy().astype(np.int64)
+
+    gt_valid = None
     if gt_mask is not None:
         gt = gt_mask.detach().cpu().numpy().astype(np.int64)
         gt_valid = gt.copy()
         gt_valid[gt_valid < 0] = 0
         gt_valid[gt_valid == 255] = 0
+
+        max_label = max(int(pred.max()), int(gt_valid.max()))
+    else:
+        max_label = int(pred.max())
+
+    palette = get_default_palette(max_label + 1 if max_label >= 0 else 1)
+
+    pred_color = mask_to_color(pred, palette)
+
+    panels = [Image.fromarray(image), Image.fromarray(pred_color)]
+    if gt_valid is not None:
         gt_color = mask_to_color(gt_valid, palette)
         panels.append(Image.fromarray(gt_color))
 
